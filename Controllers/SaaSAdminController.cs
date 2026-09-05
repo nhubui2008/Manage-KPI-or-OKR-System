@@ -86,31 +86,13 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 return RedirectToAction(nameof(Registrations));
             }
 
-            await using var transaction = await _context.Database.BeginTransactionAsync();
+            await using var transaction = _context.Database.IsRelational()
+                ? await _context.Database.BeginTransactionAsync()
+                : null;
             switch (actionType)
             {
                 case "upgrade":
                     var reg = await _context.PurchaseRegistrations
-                        .Where(r => r.Email == user.Email && r.Status == "Chờ xử lý")
-                        .OrderByDescending(r => r.CreatedAt)
-                        .FirstOrDefaultAsync();
-                    if (reg == null)
-                    {
-                        TempData["ErrorMessage"] = "Không có yêu cầu đăng ký gói đang chờ xác minh cho tài khoản này.";
-                        return RedirectToAction(nameof(Registrations));
-                    }
-
-                    user.TrialEndTime = null;
-                    user.IsActive = true;
-                    await _tenantProvisioningService.EnsureCustomerTenantAsync(
-                        user,
-                        GetCurrentSystemUserId());
-                    reg.Status = "Đã kích hoạt";
-                    reg.AdminNotes = $"Được kích hoạt thủ công bởi {User.Identity?.Name ?? "Admin"} lúc {DateTime.Now:g}.";
-                    TempData["SuccessMessage"] = "Đã kích hoạt bản quyền chính thức cho khách hàng.";
-                    break;
-                case "extend":
-                    var pendingTrial = await _context.PurchaseRegistrations
                         .Where(r => r.Email == user.Email && r.Status == "Chờ xử lý")
                         .OrderByDescending(r => r.CreatedAt)
                         .FirstOrDefaultAsync();
@@ -119,14 +101,42 @@ namespace Manage_KPI_or_OKR_System.Controllers
                             membership.SystemUserId == user.Id &&
                             membership.Tenant != null &&
                             membership.Tenant.Code == $"tenant-{user.Id}");
-                    if (pendingTrial == null && !hasCustomerTenant)
+                    if (reg == null && !hasCustomerTenant)
+                    {
+                        TempData["ErrorMessage"] = "Không tìm thấy yêu cầu đăng ký hoặc không gian làm việc đang chờ duyệt cho tài khoản này.";
+                        return RedirectToAction(nameof(Registrations));
+                    }
+
+                    user.TrialEndTime = null;
+                    user.IsActive = true;
+                    await _tenantProvisioningService.EnsureCustomerTenantAsync(
+                        user,
+                        GetCurrentSystemUserId());
+                    if (reg != null)
+                    {
+                        reg.Status = "Đã kích hoạt";
+                        reg.AdminNotes = $"Được kích hoạt thủ công bởi {User.Identity?.Name ?? "Admin"} lúc {DateTime.Now:g}.";
+                    }
+                    TempData["SuccessMessage"] = "Đã kích hoạt bản quyền chính thức cho khách hàng.";
+                    break;
+                case "extend":
+                    var pendingTrial = await _context.PurchaseRegistrations
+                        .Where(r => r.Email == user.Email && r.Status == "Chờ xử lý")
+                        .OrderByDescending(r => r.CreatedAt)
+                        .FirstOrDefaultAsync();
+                    var hasTenant = await _context.TenantMemberships
+                        .AnyAsync(membership =>
+                            membership.SystemUserId == user.Id &&
+                            membership.Tenant != null &&
+                            membership.Tenant.Code == $"tenant-{user.Id}");
+                    if (pendingTrial == null && !hasTenant)
                     {
                         TempData["ErrorMessage"] = "Không có yêu cầu dùng thử đang chờ xác minh cho tài khoản này.";
                         return RedirectToAction(nameof(Registrations));
                     }
 
                     user.IsActive = true;
-                    user.TrialEndTime = (user.TrialEndTime ?? DateTime.Now).AddHours(24);
+                    user.TrialEndTime = ((user.TrialEndTime.HasValue && user.TrialEndTime.Value > DateTime.Now) ? user.TrialEndTime.Value : DateTime.Now).AddHours(24);
                     await _tenantProvisioningService.EnsureCustomerTenantAsync(
                         user,
                         GetCurrentSystemUserId());
@@ -152,7 +162,10 @@ namespace Manage_KPI_or_OKR_System.Controllers
             }
 
             await _context.SaveChangesAsync();
-            await transaction.CommitAsync();
+            if (transaction != null)
+            {
+                await transaction.CommitAsync();
+            }
             return RedirectToAction(nameof(Registrations));
         }
 

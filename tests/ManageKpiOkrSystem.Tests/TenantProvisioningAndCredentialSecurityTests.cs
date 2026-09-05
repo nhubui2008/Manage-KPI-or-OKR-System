@@ -179,6 +179,60 @@ public sealed class TenantProvisioningAndCredentialSecurityTests
         AssertNamedRateLimit(purchaseLogin);
     }
 
+    [Fact]
+    public async Task SaaSAdmin_UpdateAccountStatus_UpgradeAndExtend_Succeeds()
+    {
+        await using var context = CreateContext();
+        var adminRole = new Role { RoleName = AuthRoleHelper.AdminRoleName, IsActive = true };
+        context.Roles.Add(adminRole);
+        var user = ActiveUser("trial-customer");
+        user.TrialEndTime = DateTime.Now.AddDays(-2); // already expired 2 days ago
+        context.SystemUsers.Add(user);
+        var registration = new PurchaseRegistration
+        {
+            Email = user.Email ?? "trial-customer@example.test",
+            SelectedPlan = "Starter",
+            Status = "Chờ xử lý",
+            CreatedAt = DateTime.Now.AddDays(-3)
+        };
+        context.PurchaseRegistrations.Add(registration);
+        await context.SaveChangesAsync();
+
+        var provisioningService = new TenantProvisioningService(context);
+        var controller = new SaaSAdminController(context, provisioningService)
+        {
+            ControllerContext = new ControllerContext
+            {
+                HttpContext = new Microsoft.AspNetCore.Http.DefaultHttpContext()
+            },
+            TempData = new Microsoft.AspNetCore.Mvc.ViewFeatures.TempDataDictionary(
+                new Microsoft.AspNetCore.Http.DefaultHttpContext(),
+                new TestTempDataProvider())
+        };
+
+        // Test extend: should extend 24 hours from now even if trial was expired
+        var extendResult = await controller.UpdateAccountStatus(user.Id, "extend");
+        Assert.IsType<RedirectToActionResult>(extendResult);
+        Assert.True(user.TrialEndTime.HasValue);
+        Assert.True(user.TrialEndTime.Value > DateTime.Now.AddHours(23));
+        Assert.Equal("Đã kích hoạt", registration.Status);
+
+        // Test upgrade: should clear trial end time and establish customer tenant
+        var upgradeResult = await controller.UpdateAccountStatus(user.Id, "upgrade");
+        Assert.IsType<RedirectToActionResult>(upgradeResult);
+        Assert.Null(user.TrialEndTime);
+        Assert.True(user.IsActive);
+        var tenant = await context.Tenants.FirstOrDefaultAsync(t => t.Code == $"tenant-{user.Id}");
+        Assert.NotNull(tenant);
+        Assert.True(tenant.IsActive);
+    }
+
+    private sealed class TestTempDataProvider : Microsoft.AspNetCore.Mvc.ViewFeatures.ITempDataProvider
+    {
+        public IDictionary<string, object> LoadTempData(Microsoft.AspNetCore.Http.HttpContext context) => new Dictionary<string, object>();
+        public void SaveTempData(Microsoft.AspNetCore.Http.HttpContext context, IDictionary<string, object> values) { }
+    }
+
     private static void AssertNamedRateLimit(MethodInfo method)
     {
         var attribute = method.GetCustomAttribute<EnableRateLimitingAttribute>();

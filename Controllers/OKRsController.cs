@@ -740,16 +740,16 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             if (keyResults == null || !keyResults.Any())
             {
-                return BadRequest("Danh sách KR rỗng.");
+                return BadRequest(new { success = false, message = "Danh sách KR rỗng." });
             }
 
             int okrId = keyResults.First().OKRId ?? 0;
-            if (okrId == 0) return BadRequest("OkrId không hợp lệ.");
+            if (okrId == 0) return BadRequest(new { success = false, message = "OkrId không hợp lệ." });
 
             var activeOkr = await _context.OKRs
                 .AsNoTracking()
                 .AnyAsync(o => o.Id == okrId && o.IsActive == true);
-            if (!activeOkr) return NotFound("OKR không tồn tại hoặc đã bị vô hiệu hóa.");
+            if (!activeOkr) return NotFound(new { success = false, message = "OKR không tồn tại hoặc đã bị vô hiệu hóa." });
 
             if (IsManagerScopedRole() && !await CanCurrentManagerAccessOkrAsync(okrId))
             {
@@ -762,7 +762,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 var validationError = ValidateKeyResultInput(kr, requireZeroCurrentOnCreate: true);
                 if (validationError != null)
                 {
-                    return BadRequest(validationError);
+                    return BadRequest(new { success = false, message = validationError });
                 }
             }
 

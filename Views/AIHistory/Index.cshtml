@@ -167,7 +167,7 @@
                 <div class="d-flex align-items-center justify-content-between">
                     <div>
                         <p class="text-uppercase fw-semibold text-muted text-truncate mb-1 fs-12">Tổng phiên hiển thị</p>
-                        <h4 class="fs-22 fw-bold mb-0 text-dark">@Model.Page.Items.Count</h4>
+                        <h4 class="fs-22 fw-bold mb-0 text-dark">@(Model?.Page?.Items?.Count ?? 0)</h4>
                     </div>
                     <div class="ai-history-stat-icon feature-chat">
                         <i class="bi bi-layers-fill"></i>
@@ -437,7 +437,7 @@
         <!-- RIGHT COLUMN: SESSION DETAILS & TIMELINE -->
         <div class="col-12 col-lg-7 col-xl-7">
             <section class="card ai-history-detail-card shadow-sm h-100" aria-labelledby="historyDetailsHeading">
-                @if (Model.Selected == null)
+                @if (Model?.Selected == null)
                 {
                     <div class="card-body ai-history-empty">
                         <div class="ai-history-empty-icon shadow-sm">
@@ -749,7 +749,7 @@
 </div>
 
 <!-- RENAME MODAL -->
-@if (Model.Selected?.CanManage == true)
+@if (Model?.Selected?.CanManage == true)
 {
     <div class="modal fade" id="renameHistoryModal" tabindex="-1" aria-labelledby="renameHistoryModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
